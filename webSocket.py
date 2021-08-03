@@ -1,3 +1,4 @@
+from os import times
 import time
 import ast
 import json
@@ -6,19 +7,21 @@ import sqlite3
 import pandas as pd
 
 from typing import List
+from pandas.core.frame import DataFrame
+from pandas import ExcelWriter
 from polygon import WebSocketClient, CRYPTO_CLUSTER
 
 frames = []
 
 
 def my_custom_process_message(message):
-    print("Recivin messages")
+    #print("Recivin messages")
     json_message = json.loads(message)
     df = pd.DataFrame(json_message)
     frames.append(df)
     #df.to_excel("tble.xlsx", sheet_name="Sheet1")
     #print(type(json_message))
-    print(df.head)
+    #print(df.head)
 
     
     
@@ -43,25 +46,53 @@ def main():
     key = 'IR69iir3RqApPUaedAHTSJ2UuTJ9ASlB'
     my_client = WebSocketClient(CRYPTO_CLUSTER, key, my_custom_process_message)
     my_client.run_async()
+    my_dict = {}
+    timeStamp = 0
+    askPrice = 0
+    askVol = 0
+    Times = []
+    Prices = []
+    Volumes = []
+    ew = pd.ExcelWriter('tble2.xlsx', engine='xlsxwriter', mode='w')
 
 
     a = my_client.subscribe("XL2.DOGE-USD")
-    time.sleep(5)
+    time.sleep(2)
 
     my_client.close_connection()
 
-#    frames[3].to_excel("tble.xlsx",sheet_name='TheSheet')
-    final = pd.concat(frames[slice(3, len(frames))])
-    final.to_excel('tble.xlsx', sheet_name='TheSheet')
+    #print(frames[3:len(frames)])
+    count = 1
+    my_dict = {'Time': [], 'Price': [], 'Volume': []}
+    for frame in frames[3:len(frames)]:
 
-#    framNum = 3
-#    sheetNum = 1
-#    for frame in frames:
-#        sheet_name = f"Sheet{sheetNum}"
-#        frame[framNum].to_excel(f"tble{sheetNum}.xlsx", sheet_name=sheet_name)
-#        sheetNum += 1
-#        framNum += 1
 
+        if (frame['x'][0]) == 1:
+            my_dict['Time'].append(frame['t'][0])
+            print(timeStamp)
+
+            #print((frame))
+            my_dict['Price'].append(frame['a'][0][0][0])
+            print('askPrice: ', askPrice)
+            
+            my_dict['Volume'].append(frame['a'][0][0][1])
+            print('askVol: ', askVol)
+
+        
+    sheet_name = f'Sheet{count}'
+    pd.DataFrame(my_dict).to_excel(ew, sheet_name=sheet_name)
+            
+
+    print(my_dict)
+
+
+
+    ew.save()
+
+
+
+
+    print('------------------------printed asks------------------------')
 
 
 if __name__ == "__main__":
