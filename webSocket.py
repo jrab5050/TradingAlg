@@ -1,36 +1,50 @@
 from os import times
 import time
-import ast
 import json
 import pprint
-import sqlite3
 import pandas as pd
+import sys
 
-from typing import List
+from tabulate import tabulate
 from pandas.core.frame import DataFrame
 from pandas import ExcelWriter
 from polygon import WebSocketClient, CRYPTO_CLUSTER
 
 frames = []
+data = {"Price": [], "Volume": []}
 
 
 def my_custom_process_message(message):
-    #print("Recivin messages")
+    # print("Recivin messages")
+    # df = pd.DataFrame(json_message)
+    # frames.append(df)
+    # df.to_excel("tble.xlsx", sheet_name="Sheet1")
+    # print(type(json_message))
+    # print(df.head)
+
     json_message = json.loads(message)
-    df = pd.DataFrame(json_message)
-    frames.append(df)
-    #df.to_excel("tble.xlsx", sheet_name="Sheet1")
-    #print(type(json_message))
-    #print(df.head)
 
-    
-    
-#    pprint.pprint(json_message)
+    # pprint.pprint(type(json_message))
+    # pprint.pprint((json_message[0]))
+    # pprint.pprint((json_message[0]['b']))
+    # pprint.pprint(type(json_message[0]['t']))
 
-    def add_message_to_list(message):
-        messages.append(ast.literal_eval(message))
 
-    return add_message_to_list
+    if sys.argv[2] == 'a':
+        for lst in json_message[0]['a']:
+            if json_message[0]['x'] == 1:
+                data['Price'].append(lst[0])
+                data['Volume'].append(lst[1])
+    elif sys.argv[2] == 'b':
+        for lst in json_message[0]['b']:
+            if json_message[0]['x'] == 1:
+                data['Price'].append(lst[0])
+                data['Volume'].append(lst[1])
+    else:
+        print('pass a for ask, b for bid')
+
+
+        # pprint.pprint(lst[1])
 
 
 def my_custom_error_handler(ws, error):
@@ -40,59 +54,66 @@ def my_custom_error_handler(ws, error):
 def my_custom_close_handler(ws):
     print("Closing")
 
+def reportAsks(ew):
+    sheet_num = 1
+    start = 0
+    end = 100
+    for x in range(len(data['Price']) // 100):
+        temp_dict = {}
+        temp_dict['Price'] = data['Price'][start:end]
+        temp_dict['Volume'] = data['Volume'][start:end]
+        pd.DataFrame(temp_dict).to_excel(ew, sheet_name=f'sheet{sheet_num}')
+        print(tabulate(temp_dict, headers='keys', tablefmt='psql'))
+        print("------------------------printed asks------------------------")
+        sheet_num += 1
+        start = start + 100 - 1
+        end = end + 100 - 1
+
+def reportBids(ew):
+    sheet_num = 1
+    start = 0
+    end = 100
+    for x in range(len(data['Price']) // 100):
+        temp_dict = {}
+        temp_dict['Price'] = data['Price'][start:end]
+        temp_dict['Volume'] = data['Volume'][start:end]
+        pd.DataFrame(temp_dict).to_excel(ew, sheet_name=f'sheet{sheet_num}')
+        print(tabulate(temp_dict, headers='keys', tablefmt='psql'))
+        print('--------------------------DONE--------------------------')
+        sheet_num += 1
+        start = start + 100 - 1
+        end = end + 100 - 1
 
 
 def main():
-    key = 'IR69iir3RqApPUaedAHTSJ2UuTJ9ASlB'
+    key = "IR69iir3RqApPUaedAHTSJ2UuTJ9ASlB"
     my_client = WebSocketClient(CRYPTO_CLUSTER, key, my_custom_process_message)
     my_client.run_async()
-    my_dict = {}
-    timeStamp = 0
-    askPrice = 0
-    askVol = 0
-    Times = []
-    Prices = []
-    Volumes = []
-    ew = pd.ExcelWriter('tble2.xlsx', engine='xlsxwriter', mode='w')
 
-
-    a = my_client.subscribe("XL2.DOGE-USD")
-    time.sleep(2)
+    my_client.subscribe(f"XL2.{sys.argv[1].upper()}-USD")
+    time.sleep(0.5)
 
     my_client.close_connection()
 
-    #print(frames[3:len(frames)])
-    count = 1
-    my_dict = {'Time': [], 'Price': [], 'Volume': []}
-    for frame in frames[3:len(frames)]:
+    if sys.argv[2] == 'a':
+        ew = pd.ExcelWriter(f'{sys.argv[1]}_ask.xlsx', engine="xlsxwriter", mode="w")
+        reportAsks(ew)
+        print(('-'*15) + 'Reported asks' + ('-'*15))
+
+    elif sys.argv[2] == 'b':
+        ew = pd.ExcelWriter(f'{sys.argv[1]}_bid.xlsx', engine="xlsxwriter", mode="w")
+        reportBids(ew)
+        print(('-'*15) + 'Reported bids' + ('-'*15))
+
+    else:
+        print('Enter a for ask, b for bid')
 
 
-        if (frame['x'][0]) == 1:
-            my_dict['Time'].append(frame['t'][0])
-            print(timeStamp)
-
-            #print((frame))
-            my_dict['Price'].append(frame['a'][0][0][0])
-            print('askPrice: ', askPrice)
-            
-            my_dict['Volume'].append(frame['a'][0][0][1])
-            print('askVol: ', askVol)
-
-        
-    sheet_name = f'Sheet{count}'
-    pd.DataFrame(my_dict).to_excel(ew, sheet_name=sheet_name)
-            
-
-    print(my_dict)
-
-
+    # print(tabulate(data, headers='keys', tablefmt='psql'))
+    print(f'Sending over {sys.argv[1].upper()}-USD data')
+    print(len(data['Price']) // 100)
 
     ew.save()
-
-
-
-
-    print('------------------------printed asks------------------------')
 
 
 if __name__ == "__main__":

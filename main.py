@@ -14,3 +14,4 @@ def on_messege(ws, messege):
     print("reciving messeges")
 
 ws = websocket.WebSocketApp(SOCKET, on_open=on_open, on_close=on_close, on_message=on_messege)
+
