@@ -11,10 +11,10 @@ from pandas.core.frame import DataFrame
 from pandas import ExcelWriter
 from polygon import WebSocketClient, CRYPTO_CLUSTER
 
-frames = []
+# frames = []
 data_asks = {"Price": [], "Volume": []}
 data_bids = {"Price": [], "Volume": []}
-
+weights = [x / 100 for x in range(100)]
 
 def my_custom_process_message(message):
     # print("Recivin messages")
@@ -78,8 +78,8 @@ def reportAsks(ew):
         print(tabulate(temp_dict, headers='keys', tablefmt='psql'))
         print("------------------------DONE------------------------")
         sheet_num += 1
-        start = start + 100 
-        end = end + 100 
+        start = start + 100
+        end = end + 100
 
 def reportBids(ew):
     sheet_num = 1
