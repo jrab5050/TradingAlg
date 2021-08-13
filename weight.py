@@ -5,11 +5,14 @@ from random import seed
 from tabulate import tabulate
 
 seed(randint(1, 100))
-size = 10
+size = 1000
 rndList = [randint(1,100) * random() for x in range(size)]
 adict = {1:[], 2:[0 for x in range(size)]}
+adict[1] = rndList
 num = randint(1,100)
 ignoreIndx = []
+weights = [ x / size for x in range(size) ]
+checks = [False for x in range(size)]
 
 def diff(x,y):
     if x >= y:
@@ -17,21 +20,40 @@ def diff(x,y):
 
     return abs((y - x) / y)
 
+# visted -> list of visted indexs (pass [] when called)
+# items  -> list of items we need to assign weights to (pass rndList)
+# weights -> list of weights (pass [x / size for x in range(size)] when called)
+# closest -> closest val to num (pass rndList[0] when called)
+# curr    -> curr value in the list (pass the first element when called)
+# indx    -> indx of curr value in the list (pass 0 when called)
+def weightAlg3(items: list, visted: list, weights: list, closest, curr, indx):
+    global size
+    global adict
+    global num
+
+    if(len(weights) == 0):
+        return True
+
+    if(diff(num, curr) <= diff(num, closest)) and indx < size:
+        weightAlg3(items, visted, weights, curr, items[indx + 1], indx + 1)
+    elif indx < size:
+        weightAlg3(items,visted,weights,closest,items[indx + 1], indx + 1)
+
+
+
 def weightAlg2(size: int):
     # 1: The rand nums, 2: weights for rand nums
     global adict
     global rndList
     global num
     global ignoreIndx
-
-    weights = [ x / size for x in range(size) ]
+    global checks
 
     adict[1] = rndList
     i = 0
     ourNum = num
     # assume the first element is the closest
     closest = rndList[0]
-    checks = [False for x in range(size)]
     done = False # we will be done when all checks are true
     currWeight = weights.pop()
     adict[2][0] = currWeight
@@ -75,22 +97,17 @@ def weightAlg1(size: int):
     global adict
     global rndList
     global num
+    global weights
+    global checks
 
-    weights = [ x / size for x in range(size) ]
 
-    seed(randint(1, 100))
-    weights = [ x / size for x in range(size) ]
-    rndList = [randint(1,100) * random() for x in range(size)]
     # 1: The rand nums, 2: weights for rand nums
-    adict = {1:[], 2:[0 for x in range(size)]}
 
     # pprint.pp(rndList)
 
-    num = randint(1,100)
-    adict[1] = rndList
 
     # pprint.pp(adict[1])
-    print(f'num is {num}: Alg1')
+    # print(f'num is {num}: Alg1')
 
     i = 0
     lst = []
@@ -113,10 +130,11 @@ def weightAlg1(size: int):
 def main():
     # weightAlg1(size)
     # print(tabulate(adict, headers='keys', tablefmt='fancy_grid'))
-    weightAlg2(size)
-    print(tabulate(adict, headers='keys', tablefmt='fancy_grid'))
+    weightAlg1(size)
+    # print(tabulate(adict, headers='keys', tablefmt='fancy_grid'))
 
 if __name__ == '__main__':
     startTime = time.time()
     main()
     elapsedTime = time.time() - startTime
+    print(elapsedTime)

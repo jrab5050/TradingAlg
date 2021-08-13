@@ -8,14 +8,16 @@ from tabulate import tabulate
 current_price = 0.0
 data_asks = {'Price': [], 'Volume': []}
 data_bids = {'Price': [], 'Volume': []}
+asks_weighted = {'Price': [], 'Weight': [0 for x in range(100)]}
+bids_weighted = {'Price': [], 'Weight': [0 for x in range(100)]}
 
 
 def my_custom_process_message(message):
 
     global current_price
-    asks_weighted = {'Price': [], 'Weight': [0 for x in range(100)]}
-    bids_weighted = {'Price': [], 'Weight': [0 for x in range(100)]}
-    weights = [x / 100 for x in range(100)]
+    global asks_weighted
+    global bids_weighted
+    global weights
     # print(tabulate(json_message['a'], headers=['Price', 'Volume'], tablefmt='fancy_grid'))
 
     json_message = json.loads(message)[0]
@@ -33,37 +35,49 @@ def my_custom_process_message(message):
         # print('-'*25 + 'bids' + '-'*25)
         # printTble('b', 'fancy_grid', data_bids)
         # print('sainity')
-        assignWeights(json_message, 'a', asks_weighted, weights)
-        # printTble('a', 'fancy_grid', asks_weighted)
-        pprint.pprint(asks_weighted)
+        assignWeights('b')
+        # print(weights)
+        printTble('a', 'fancy_grid', bids_weighted)
+        # pprint.pp(asks_weighted)
         print('-'*25 + 'Weighted Asks' + '-'*25)
 
-def assignWeights(json_message, x: str, tble: dict, weights: list):
+def diff(x,y):
+    if x >= y:
+        return abs((x - y) / x)
+
+    return abs((y - x) / y)
+
+def assignWeights(x: str):
     global data_bids
     global data_asks
+    global asks_weighted
+    global bids_weighted
     global current_price
 
-    if x == 'a' and json_message['x'] == 1:
+    size = 100
+    weights = [x / 100 for x in range(100)]
+    # printTble('a', 'fancy_grid', data_asks)
+    print(f'sainity: {size}')
 
-        # printTble('a', 'fancy_grid', data_asks)
-        lst = []
-        for price in data_asks['Price']:
-            # print(f'sainity: price / current_price: {price / current_price}')
-            lst.append(price / current_price)
-            # print(f'sainity: size of lst: {len(lst)}')
-            tble['Price'].append(price)
+    if x == 'a':
+        tble = asks_weighted
+    elif x == 'b':
+        tble = bids_weighted
+    else:
+        print('pass in a or b')
+        return
 
-        i = 0
-        while i < len(lst):
-            tble['Weight'][lst.index(min(lst))] = weights.pop()
+    i = 0
+    lst = []
+    # find the ratio btwn lst nums and num
+    while i < size:
+       lst.append(diff(current_price, tble['Price'][i]))
+       i += 1
 
-    elif x == 'b' and json_message['x'] == 1:
-
-        for price in data_bids['price']:
-            if 0.0 < (price - current_price) and (price - current_price) < 1.0:
-               tble['Price'].append(price)
-               tble['Weight'].append(weights.pop())
-
+    i = 0
+    while len(weights) > 0 and i < size:
+        tble['Weight'][lst.index(min(lst))] = weights.pop()
+        lst[lst.index(min(lst))] = 9999999.999
 
 def assignAsksBids(json_message):
     global data_bids
@@ -72,9 +86,11 @@ def assignAsksBids(json_message):
     if json_message['x'] == 1:
         for lst in json_message['b']:
             data_bids['Price'].append(lst[0])
+            bids_weighted['Price'].append(lst[0])
             data_bids['Volume'].append(lst[1])
         for lst in json_message['a']:
             data_asks['Price'].append(lst[0])
+            asks_weighted['Price'].append(lst[0])
             data_asks['Volume'].append(lst[1])
 
 def printTble(x: str, frmt: str, tble: dict):
@@ -96,6 +112,7 @@ def printTble(x: str, frmt: str, tble: dict):
         for i in range(len(tble[tble.keys()[0]]) // 100):
             temp_dict = {}
             temp_dict[list(tble.keys())[0]] = tble[list(tble.keys())[0]][start:end]
+            print(f'sainity: {tble.keys[1]}')
             temp_dict[list(tble.keys())[1]] = tble[list(tble.keys())[1]][start:end]
             print(tabulate(temp_dict, headers='keys', tablefmt=frmt))
             start = start + 100
